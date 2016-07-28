@@ -1,3 +1,4 @@
+# Simple Cython example
 
 ```
 $ python setup.py build_ext --inplace
@@ -8,5 +9,17 @@ $ python -c "import demo; print(demo.foo(2.2)); import numpy as np; x=np.arange(
 [ 0.  1.  2.  3.  4.  5.  6.  7.  8.  9.]
 [    0.     120.75   241.5    362.25   483.     603.75   724.5    845.25
    966.    1086.75]
+```
+
+# LDPC generator
+Requires MATLAB with `py` Python bridge, a C compiler that MEX understands, and Scipy.
+```
+$ gcc -o gen.o ldpc_generate1.c && ./gen.o > gen.m
+$ cd mex && matlab -r "mex -largeArrayDims ldpc_generate.c; quit"
+# make sure you quit matlab
+$ cd ..
+$ matlab -r "test_ldpc_generate; quit"
+# ...
+Tests passed!
 ```
 

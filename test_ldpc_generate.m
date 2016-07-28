@@ -19,4 +19,5 @@ pyarr = py.scipy.sparse.csc_matrix({pyvalues, ...
 frompy = numpyArrayToMatlab(pyarr);
 
 assert(all(gold(:) == frompy(:)))
+disp('Tests passed!')
 

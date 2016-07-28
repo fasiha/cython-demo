@@ -12,7 +12,18 @@ $ python -c "import demo; print(demo.foo(2.2)); import numpy as np; x=np.arange(
 ```
 
 # LDPC generator
-Requires MATLAB with `py` Python bridge, a C compiler that MEX understands, and Scipy.
+```
+$ python setup.py build_ext --inplace
+```
+Then, in Python:
+```python
+import pyldpc_generate
+H = pyldpc_generate.generate(512,1024,3.0,2,123)
+```
+`H` is the sparse array of interest.
+
+## Test
+The following test requires MATLAB with `py` Python bridge and a C compiler that MEX understands.
 ```
 $ python setup.py build_ext --inplace
 $ rm demo.c ldpc_generate.c

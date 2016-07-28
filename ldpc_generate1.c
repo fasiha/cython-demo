@@ -1,16 +1,10 @@
 /* Generate H for  LDPC*/
 /* Based on sparse.c by Matt Davey <mcdavey@mrao.cam.ac.uk> with his
  * permission*/
+#include "ldpc_generate1.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-/* Convert Matlab-specific stuff to regular stuff */
-typedef long long mwSize;
-typedef long long mwIndex;
-
-typedef int IOint;
-typedef double IOdouble;
 
 #define mexPrintf printf
 #define mexErrMsgTxt printf
@@ -54,17 +48,16 @@ IOdouble uniformRand() { return ((IOdouble)rand() / (IOdouble)RAND_MAX); }
  * [3] Versioned Wikipedia entry: https://en.wikipedia.org/w/index.php?title=Sparse_matrix&oldid=731601498#Compressed_sparse_column_.28CSC_or_CCS.29
  * [4] http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csc_matrix.html
  */
-void mexFunction(const mwSize M, const mwSize N, const IOdouble t, const mwIndex q,
-                 const IOint seed, double **sparseValues, mwSize **sparseRows,
-                 mwSize **sparseCols, mwSize *nzmaxOut) {
+void ldpc_generate(const mwSize M, const mwSize N, const IOdouble t,
+                   const mwIndex q, const IOint seed, IOdouble **sparseValues,
+                   mwSize **sparseRows, mwSize **sparseCols, mwSize *nzmaxOut) {
   short **M_list, **N_list, *M_target;
-  double *pp, *sr, *s, *ss;
+  double *sr;
   mwSize nzmax;
   mwIndex i, j, k, *irs, *jcs, l, tr, tm, tc, done, redo, tmp, regime,
       tr_max, t_max, m_low;
   void adjust(mwIndex *, mwIndex *, mwIndex *, mwIndex *);
   unsigned int K2, M2;
-  char c;
 
   /* Set up RNG */
   setupRand(seed);
@@ -123,8 +116,10 @@ void mexFunction(const mwSize M, const mwSize N, const IOdouble t, const mwIndex
   K2 = 0;
   if (t < 3) {
     K2 = ceil((double)N * (3 - t));
-    if (K2 > M)
+    if (K2 > M) {
       mexErrMsgTxt("GENERATE: Can't have more than M weight 2 columns.");
+      exit(1);
+    }
     j = 2;
     done = 0;
     for (i = 0; !done; i++) {
@@ -351,6 +346,7 @@ void adjust(mwIndex *tm, mwIndex *tr, mwIndex *tc, mwIndex *regime) {
   }
 }
 
+#if 0
 int main() {
   mwSize M = 512;
   mwSize N = 1024;
@@ -363,7 +359,7 @@ int main() {
   mwSize *cols;
   mwSize nzmax;
 
-  mexFunction(M, N, t, q, seed, &values, &rows, &cols, &nzmax);
+  ldpc_generate(M, N, t, q, seed, &values, &rows, &cols, &nzmax);
 
   printf("nzmax = %lld;\n", nzmax);
 
@@ -390,3 +386,4 @@ int main() {
 
   return 0;
 }
+#endif

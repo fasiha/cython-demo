@@ -14,7 +14,8 @@ $ python -c "import demo; print(demo.foo(2.2)); import numpy as np; x=np.arange(
 # LDPC generator
 Requires MATLAB with `py` Python bridge, a C compiler that MEX understands, and Scipy.
 ```
-$ gcc -o gen.o ldpc_generate1.c && ./gen.o > gen.m
+$ python setup.py build_ext --inplace
+$ rm demo.c ldpc_generate.c
 $ cd mex && matlab -r "mex -largeArrayDims ldpc_generate.c; quit"
 # make sure you quit matlab
 $ cd ..
@@ -23,3 +24,8 @@ $ matlab -r "test_ldpc_generate; quit"
 Tests passed!
 ```
 
+If you really want to exercise the C library from a C `main`,
+```
+gcc -o gen.o ldpc_generate1.c gen_test.c && gen.o > gen.py
+```
+Confirm that this generates the same CSC sparse matrix as the Cython module wrapping the same library.

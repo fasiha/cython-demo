@@ -276,7 +276,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   nzmax = 0;
   for (j = 0; j < N; j++)
     nzmax += M_list[j][0];
-  mexPrintf("%d \n", nzmax);
   /* NOTE: The maximum number of non-zero elements cannot be less
      than the number of columns in the matrix. */
   if (N > nzmax) {

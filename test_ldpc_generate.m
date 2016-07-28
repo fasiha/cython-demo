@@ -8,14 +8,17 @@ q = 2;
 seed = 123;
 gold = full(ldpc_generate(M, N, t, q, seed));
 
-% Generated from C:
-% $ gcc -o gen.o ldpc_generate1.c && ./gen.o > gen.m
-gen
+if count(py.sys.path,pwd) == 0
+  insert(py.sys.path, int32(0), pwd);
+end
+pyldpc_generate = py.importlib.import_module('pyldpc_generate');
+py.reload(pyldpc_generate);
 
-pyvalues = py.numpy.array(values);
-pyarr = py.scipy.sparse.csc_matrix({pyvalues, ...
-                                    int32(rows), ...
-                                    int32(cols)}).toarray();
+pyarr = py.pyldpc_generate.generate(int32(M), ...
+                                    int32(N), ...
+                                    t, ...
+                                    int32(q), ...
+                                    int32(seed)).toarray();
 frompy = numpyArrayToMatlab(pyarr);
 
 assert(all(gold(:) == frompy(:)))

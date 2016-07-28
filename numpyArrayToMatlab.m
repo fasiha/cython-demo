@@ -1,0 +1,6 @@
+function arr = numpyArrayToMatlab(pyarr)
+
+arr = cell2mat(cellfun(@(x) cell2mat(x.cell()), ...
+                       pyarr.tolist().cell(), ...
+                       'un',0)');
+

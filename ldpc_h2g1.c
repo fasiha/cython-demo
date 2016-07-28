@@ -14,64 +14,52 @@
    the part which writes G if you wish.
    */
 #include <math.h>
-#include "mex.h"
-
-/* Input Arguments: tentative H matrix*/
-#define H_IN prhs[0]
-
-/* Output Arguments: final matrices*/
-#define H_OUT plhs[0]
-#define G_OUT plhs[1]
+#include <stdlib.h>
+#include <stdio.h>
+#include "ldpc_generate1.h"
 
 /* modification mostly on declaring and Forced Conversion on the data types of
  * the variables -Dong Meng*/
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  unsigned char **HH, **GG;
+/* Array accessors */
+#define idx(arr, row, col, numrows) (arr[row + col * numrows])
+#define HHidx(row, col) (HH[row + col * M])
+#define GGidx(row, col) (GG[row + col * K])
+
+void h2g(const mwSize M, const mwSize N, const IOdouble *const sr1,
+         const mwSize *const irs1, const mwSize *const jcs1, const mwSize nz,
+         IOdouble **Hvalues, mwSize **Hrows, mwSize **Hcols, mwSize *Hsize,
+         IOuint8 **Gout) {
+  IOuint8 *HH, *GG;
   mwIndex ii, jj, *ir, *jc, rdep, tmp, d;
-  double *sr1, *sr2, *g;
-  mwSize N, M, K, nz;
-  mwIndex i, j, k, kk, *irs1, *jcs1, *irs2, *jcs2;
-
-  /* Check for proper number of arguments */
-  if (nrhs != 1) {
-    mexErrMsgTxt("h2g requires one input arguments.");
-  } else if (nlhs != 2) {
-    mexErrMsgTxt("h2g requires two output arguments.");
-  } else if (!mxIsSparse(H_IN)) {
-    mexErrMsgTxt("h2g requires sparse H matrix.");
-  }
-
-  /* read sparse matrix H */
-  sr1 = mxGetPr(H_IN);
-  irs1 = mxGetIr(H_IN);  /* row */
-  jcs1 = mxGetJc(H_IN);  /* column */
-  nz = mxGetNzmax(H_IN); /* number of nonzero elements (they are ones)*/
-  M = mxGetM(H_IN);
-  N = mxGetN(H_IN);
+  double *sr2;
+  mwSize K;
+  mwIndex i, j, k, kk, *irs2, *jcs2;
 
   /* create working array HH[row][column]*/
-  HH = (unsigned char **)mxMalloc(M * sizeof(unsigned char *));
-  for (i = 0; i < M; i++) {
-    HH[i] = (unsigned char *)mxMalloc(N * sizeof(unsigned char));
+  HH = (IOuint8 *)calloc(M * N, sizeof(IOuint8 *));
+  if (HH == NULL) {
+    printf("ERROR: could not allocate memory for HH.");
+    exit(1);
   }
-  for (i = 0; i < M; i++)
-    for (j = 0; j < N; j++)
-      HH[i][j] = 0; /* initialize all to zero */
 
   k = 0;
   for (j = 0; j < N; j++) {
     for (i = 0; i < (jcs1[j + 1] - jcs1[j]); i++) {
       ii = irs1[k];       /* index in column j*/
-      HH[ii][j] = sr1[k]; /* put  nonzeros */
+      HHidx(ii, j) = sr1[k]; /* put  nonzeros */
       k++;
     }
   }
 
   /* invert HH matrix here */
   /* row and column indices */
-  ir = (mwIndex *)mxMalloc(M * sizeof(mwIndex));
-  jc = (mwIndex *)mxMalloc(N * sizeof(mwIndex));
+  ir = (mwIndex *)malloc(M * sizeof(mwIndex));
+  jc = (mwIndex *)malloc(N * sizeof(mwIndex));
+  if (ir == NULL || jc == NULL) {
+    printf("ERROR: could not allocate memory for ir or jc.");
+    exit(1);
+  }
   for (i = 0; i < M; i++)
     ir[i] = i;
   for (j = 0; j < N; j++)
@@ -84,9 +72,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   while ((d + rdep) < M) { /* cycle through independent rows of H */
 
     j = d; /* current column index along row ir[d] */
-    while ((HH[ir[d]][jc[j]] == 0) && (j < (N - 1)))
+    while ((HHidx(ir[d], jc[j]) == 0) && (j < (N - 1)))
       j++;                  /* find first nonzero element in row i */
-    if (HH[ir[d]][jc[j]]) { /* found nonzero element. It is "1" in GF2 */
+    if (HHidx(ir[d], jc[j])) { /* found nonzero element. It is "1" in GF2 */
 
       /* swap columns */
       tmp = jc[d];
@@ -95,9 +83,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
       /* eliminate current column using row operations */
       for (ii = 0; ii < M; ii++)
-        if (HH[ir[ii]][jc[d]] && (ir[ii] != ir[d]))
+        if (HHidx(ir[ii], jc[d]) && (ir[ii] != ir[d]))
           for (jj = d; jj < N; jj++)
-            HH[ir[ii]][jc[jj]] = (HH[ir[ii]][jc[jj]] + HH[ir[d]][jc[jj]]) % 2;
+            HHidx(ir[ii], jc[jj]) =
+                (HHidx(ir[ii], jc[jj]) + HHidx(ir[d], jc[jj])) % 2;
     } else {  /* all zeros -  need to delete this row and update indices */
       rdep++; /* increase number of dependent rows */
       tmp = ir[d];
@@ -112,35 +101,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   K = N - M + rdep; /* true K */
 
   /* create G matrix  G = [A'| I] if H = [I|A]*/
-  GG = (unsigned char **)mxMalloc(K * sizeof(unsigned char *));
-  for (i = 0; i < K; i++) {
-    GG[i] = (unsigned char *)mxMalloc(N * sizeof(unsigned char));
+  GG = (IOuint8 *)malloc(K * N * sizeof(IOuint8 *));
+  if (GG == NULL) {
+    printf("ERROR: could not allocate memory for GG.");
+    exit(1);
   }
   for (i = 0; i < K; i++)
     for (j = 0; j < (N - K); j++) {
       tmp = (N - K + i);
-      GG[i][j] = HH[ir[j]][jc[tmp]];
+      GGidx(i, j) = HHidx(ir[j], jc[tmp]);
     }
 
+  /* FIXME if GG was calloc'd, we wouldn't need to write all these zeros (just
+   * the ones) */
   for (i = 0; i < K; i++)
     for (j = (N - K); j < N; j++)
-      if (i == (j - N + K)) /* diagonal */
-        GG[i][j] = 1;
-      else
-        GG[i][j] = 0;
+      GGidx(i, j) = (i == (j - N + K));
 
-  /* NOTE, it is very inefficient way to store G. Change to taste!*/
-  G_OUT = mxCreateDoubleMatrix(K, N, mxREAL);
-  /* Assign pointers to the output matrix */
-  g = mxGetPr(G_OUT);
-  for (i = 0; i < K; i++)
-    for (j = 0; j < N; j++)
-      g[i + j * K] = GG[i][j];
-
-  H_OUT = mxCreateSparse(M, N, nz, mxREAL);
-  sr2 = mxGetPr(H_OUT);
-  irs2 = mxGetIr(H_OUT); /* row */
-  jcs2 = mxGetJc(H_OUT); /* column */
+  sr2 = (double *)calloc(nz, sizeof(double));
+  irs2 = (mwSize *)calloc(nz, sizeof(mwSize));
+  jcs2 = (mwSize *)calloc(N + 1, sizeof(mwSize));
+  if (sr2 == NULL || irs2 == NULL || jcs2 == NULL) {
+    printf("ERROR: could not allocate sparse array.");
+    exit(1);
+  }
   /* Write H_OUT swapping columns according to jc */
   k = 0;
   for (j = 0; (j < N); j++) {
@@ -155,17 +139,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   jcs2[N] = k;
 
+  /* Update outputs */
+  *Hvalues = sr2;
+  *Hrows = irs2;
+  *Hcols = jcs2;
+  *Hsize = nz;
+  *Gout = GG;
+
   /* free the memory */
-  for (j = 0; j < M; j++) {
-    mxFree(HH[j]);
-  }
-  mxFree(HH);
-  mxFree(ir);
-  mxFree(jc);
-  for (i = 0; i < K; i++) {
-    mxFree(GG[i]);
-  }
-  mxFree(GG);
+  free(HH);
+  free(ir);
+  free(jc);
   return;
 }
 

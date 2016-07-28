@@ -8,6 +8,13 @@ typedef long long mwIndex;
 typedef int IOint;
 typedef double IOdouble;
 
+typedef unsigned char IOuint8;
+
+void h2g(const mwSize M, const mwSize N, const IOdouble *const sr1,
+         const mwSize *const irs1, const mwSize *const jcs1, const mwSize nz,
+         IOdouble **Hvalues, mwSize **Hrows, mwSize **Hcols, mwSize *Hsize,
+         IOuint8 **Gout);
+
 void ldpc_generate(const mwSize M, const mwSize N, const IOdouble t,
                    const mwIndex q, const IOint seed, IOdouble **sparseValues,
                    mwSize **sparseRows, mwSize **sparseCols, mwSize *nzmaxOut);

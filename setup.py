@@ -4,7 +4,7 @@ from Cython.Distutils import build_ext
 
 import numpy
 ldpc_generate = Extension("pyldpc_generate",
-                         ["ldpc_generate.pyx", "ldpc_generate1.c"],
+                         ["ldpc_generate.pyx", "ldpc_generate1.c", "ldpc_h2g1.c"],
                          include_dirs=[numpy.get_include()])
 
 demo = Extension("demo",

@@ -10,6 +10,8 @@ typedef double IOdouble;
 
 typedef unsigned char IOuint8;
 
+/* TODO FIXME these two IOdouble arrays, Hvalues and sr1/sparseValues, they can
+ * be uint8 just like Gout. */
 void h2g(const mwSize M, const mwSize N, const IOdouble *const sr1,
          const mwSize *const irs1, const mwSize *const jcs1, const mwSize nz,
          IOdouble **Hvalues, mwSize **Hrows, mwSize **Hcols, mwSize *Hsize,

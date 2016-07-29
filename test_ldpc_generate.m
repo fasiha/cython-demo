@@ -3,7 +3,7 @@ addpath mex
 
 %% Setup
 M = 512;
-N = 1024;
+N = 1024*2;
 t = 3;
 q = 2;
 seed = 123;

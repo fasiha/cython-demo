@@ -29,7 +29,7 @@
 void h2g(const mwSize M, const mwSize N, const IOdouble *const sr1,
          const mwSize *const irs1, const mwSize *const jcs1, const mwSize nz,
          IOdouble **Hvalues, mwSize **Hrows, mwSize **Hcols, mwSize *Hsize,
-         IOuint8 **Gout) {
+         IOuint8 **Gout, mwSize *Kout) {
   IOuint8 *HH, *GG;
   mwIndex ii, jj, *ir, *jc, rdep, tmp, d;
   double *sr2;
@@ -145,6 +145,7 @@ void h2g(const mwSize M, const mwSize N, const IOdouble *const sr1,
   *Hcols = jcs2;
   *Hsize = nz;
   *Gout = GG;
+  *Kout = K;
 
   /* free the memory */
   free(HH);

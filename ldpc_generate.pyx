@@ -16,7 +16,7 @@ cdef extern from "ldpc_generate1.h":
     void _h2g "h2g" (const mwSize M, const mwSize N, const IOdouble *const sr1,
             const mwSize *const irs1, const mwSize *const jcs1, const mwSize nz,
             IOdouble **Hvalues, mwSize **Hrows, mwSize **Hcols, mwSize *Hsize,
-            IOuint8 **Gout)
+            IOuint8 **Gout, mwSize * Ksize)
 
 np.import_array()
 
@@ -47,12 +47,13 @@ def generateGH(IOint M, IOint N, IOdouble t, mwIndex q, IOint seed):
     cdef mwSize * Hcols
     cdef mwSize Hsize
     cdef IOuint8 * G
-    _h2g(M, N, vals, rows, cols, nzmax, &Hvals, &Hrows, &Hcols, &Hsize, &G)
+    cdef mwSize K
+    _h2g(M, N, vals, rows, cols, nzmax, &Hvals, &Hrows, &Hcols, &Hsize, &G, &K)
 
     cdef IOdouble[::1] HvalsView = <IOdouble[:Hsize]>Hvals
     cdef mwIndex[::1] HrowsView = <mwIndex[:Hsize]>Hrows
     cdef mwIndex[::1] HcolsView = <mwIndex[:(N+1)]>Hcols
-    cdef IOuint8[::1] Gview = <IOuint8[:(N * M)]>G
+    cdef IOuint8[::1] Gview = <IOuint8[:(K * N)]>G
 
     return (sparse.csc_matrix((np.array(HvalsView), HrowsView, HcolsView)),
-            np.array(Gview, dtype=np.uint8).reshape((M, N), order='F'))
+            np.array(Gview, dtype=np.uint8).reshape((K, N), order='F'))
